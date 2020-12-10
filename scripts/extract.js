@@ -84,7 +84,8 @@ lang: fr-FR
     await exec(`${pandocCmd} "${distMdFile}" -o "${distFile}.epub"`);
     // html
     console.log(`Exportation (html) -> ${distFile}.html`);
-    await exec(`${pandocCmd} "${distMdFile}" -o "${distFile}.html"`);
+    const htmlTemplateFile = path.join(__dirname, "..", "templates", "template.html");
+    await exec(`${pandocCmd} "${distMdFile}" --template="${htmlTemplateFile}" -o "${distFile}.html"`);
     // rtf
     console.log(`Exportation (rtf) -> ${distFile}.rtf`);
     await exec(`${pandocCmd} "${distMdFile}" -o "${distFile}.rtf"`);
@@ -100,7 +101,7 @@ lang: fr-FR
 /**
  * Extrait une page du programme (préface, chapitre ou annexe) depuis l'URL
  * donnée puis la nettoie et la convertit en Markdown.
- * 
+ *
  * @param {string} url URL de la page à extraire
  * @param {number} l Niveau des titres (par défaut : 3)
  * @returns Le titre et le contenu de la page (au format Markdown)
