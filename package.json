@@ -1,6 +1,6 @@
 {
   "name": "laec",
-  "version": "2020.11.0",
+  "version": "2020.11.1",
   "description": "Outillage d'extraction et d'exportation du programme L'Avenir en commun",
   "scripts": {
     "extract": "node scripts/extract.js",

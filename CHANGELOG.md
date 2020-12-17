@@ -1,5 +1,10 @@
 # Historique des changements
 
+## 2020.11.1 - 17/12/2020
+
+- Amélioration de l'extraction
+- Amélioration de l'exportation HTML
+
 ## 2020.11.0 - 28/11/2020
 
 - Version initiale

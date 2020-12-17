@@ -61,8 +61,8 @@ lang: fr-FR
     await fs.appendFile(distMdFile, `${np}## Annexes\n\n`, "utf8");
     for (let i = 0; i < annexes.length; i++) {
         console.log(`> Annexe ${i + 1} (${annexes[i].url})`);
-        const annex = await extractPage(annexes[i].url, 4);
-        const annexContent = `${np}### ${annex.title}\n\n${annex.content}\n\n`;
+        const annex = await extractPage(annexes[i].url, 4, true);
+        const annexContent = `${i == 0 ? "" : np}### ${annex.title}\n\n${annex.content}\n\n`;
         await fs.appendFile(distMdFile, annexContent, "utf8");
     }
 
@@ -104,30 +104,45 @@ lang: fr-FR
  *
  * @param {string} url URL de la page à extraire
  * @param {number} l Niveau des titres (par défaut : 3)
+ * @param {boolean} annex La page à extraire est une annexe
  * @returns Le titre et le contenu de la page (au format Markdown)
  */
-async function extractPage(url, l) {
+async function extractPage(url, l, annex) {
     const level = l || 3;
+    // Téléchargement de la page
     const html = (await axios.get(url)).data;
+    // Extraction du titre et du contenu
     const dom = cheerio.load(html);
     const title = dom("h2").eq(0).text();
-    const raw = dom("body.page > div.page > div > section").slice(2, 3)
+    let raw = dom("body.page > div.page > div > section").slice(2, 3)
         .find(".elementor-widget-container").eq(0)
-        .remove("span.elementor-menu-anchor").html()
-        .replace(/h2>/g, "strong>") // Certains titres n'en sont pas
-        .replace(/h3>/g, `h${level}>`) // Mise des titres au bon niveau
-        .replace(/\s+<\/(strong|em)>\s*/g, "</$1> ") // Nettoyage <strong> et <em>
+        .remove("span.elementor-menu-anchor").html();
+    // Nettoyage du contenu
+    if (!annex) raw = raw
+        .replace(/h2>/g, "strong>"); // Certains titres n'en sont pas
+    raw = raw
+        .replace(/h[23]>/g, `h${level}>`) // Mise des titres au bon niveau
+        .replace(/ ([a-z])<(strong|em)>([a-z])/gi, " <$2>$1$3") // <strong> et <em> mal positionnés
+        .replace(/([a-z])<\/(strong|em)>([a-z]) /gi, "$1$3</$2> ") // </strong> et </em> mal positionnés
+        .replace(/\s+<\/(strong|em)>\s*/g, "</$1> ") // </strong> et </em> mal positionnés (espace avant fin)
         .replace(/<strong>\s*<br>\s*<\/strong>/g, "</p><p>") // Correction de certains sauts à la ligne
         .trim();
-    const content = turndown.turndown(raw)
-        .replace(/[^\S\r\n]+$/gm, "") // Nettoyage des espaces en fin de ligne
+    // Conversion en Markdown et suite du nettoyage
+    let content = turndown.turndown(raw)
         .replace(/^[^\S\r\n]+_/gm, "_") // Suppression de l'espace devant les introductions
-        .replace(/^(#+)\s*([\d]+)\\?\.\s+/gm, "$1 $2. ") // Formatage des titres numérotés
-        .replace(/^#+\s*(?:\*\*)?([^\d\s*#][^*\n]+)(?:\*\*)?$/gm, "**$1**") // Titres non numérotés -> **[...]**
-        .replace(/^\*\*(Pour en savoir plus[^:\n]+):\*\*$/gm, "#".repeat(level) + " $1") // Sauf "Pour en savoir plus [...]"
+        .replace(/^(#+)\s*([\d]+)\\?\.\s+/gm, "$1 $2. "); // Formatage des titres numérotés
+    if (!annex) content = content
+        .replace(/^#+\s*(?:\*\*)?([^\d\s*#][^*\n]+)(?:\*\*)?$/gm, "#".repeat(level + 1) + " $1") // Titres non numérotés
+        .replace(/^#+\s*(Pour en savoir plus[^:\n]+): *$/gm, "#".repeat(level) + " $1") // Titres "Pour en savoir plus [...]"
+    content = content
+        .replace(/^(#+ .+) : *$/gm, "$1") // Suppression du ":" final pour les titres
         .replace(/ *\*\* *\*\*_([^_]+)_\*\* *\*\* */g, " _$1_ ") // Nettoyage des conflits <strong> et <em>
+        .replace(/[^\S\r\n]+$/gm, "") // Nettoyage des espaces en fin de ligne
+        .replace(/([^\n])\n(Concrètement|Pour aller plus loin) :\n/g, "$1\n\n$2 :\n") // Saut de paragraphe manquant
         .replace(/^(\s*)-\s+/gm, "$1- ") // Formatage des listes à puces
         .replace(/^\s*•\s+/gm, "- ") // Formatage des listes à puces non standard
+        .replace(/\[\]\([^)]+\)/g, "") // Suppression des liens sans texte associé
+        .replace(/([^\s]):([^\/])/g, "$1 :$2") // Espace manquant avant ":"
         .trim();
     return { title, content };
 }

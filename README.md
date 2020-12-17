@@ -2,7 +2,7 @@
 
 ![Bannière](./images/banner.svg)
 
-![Version : Novembre 2020 - Révision 0](https://img.shields.io/static/v1?label=version&message=2020.11.0&color=e93a55&style=flat-square)
+![Version : Novembre 2020 - Révision 1](https://img.shields.io/static/v1?label=version&message=2020.11.1&color=e93a55&style=flat-square)
 ![Source : Nous Sommes Pour !](https://img.shields.io/static/v1?label=source&message=noussommespour.fr&color=571aff&style=flat-square)
 ![Licence : GNU GPLv3](https://img.shields.io/static/v1?label=licence&message=GPL-3.0-or-later&color=1EDF3F&style=flat-square)
 
