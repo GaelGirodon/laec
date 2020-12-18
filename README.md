@@ -2,14 +2,15 @@
 
 ![Bannière](./images/banner.svg)
 
-![Version : Novembre 2020 - Révision 1](https://img.shields.io/static/v1?label=version&message=2020.11.1&color=e93a55&style=flat-square)
-![Source : Nous Sommes Pour !](https://img.shields.io/static/v1?label=source&message=noussommespour.fr&color=571aff&style=flat-square)
-![Licence : GNU GPLv3](https://img.shields.io/static/v1?label=licence&message=GPL-3.0-or-later&color=1EDF3F&style=flat-square)
+[![Version](https://img.shields.io/github/package-json/version/GaelGirodon/laec?color=e93a55&style=flat-square)](https://github.com/GaelGirodon/laec/releases/latest)
+[![Source](https://img.shields.io/static/v1?label=source&message=noussommespour.fr&color=571aff&style=flat-square)](https://noussommespour.fr)
+[![Licence](https://img.shields.io/github/license/GaelGirodon/laec?color=1edf3f&label=licence&style=flat-square)](./LICENSE)
+[![Télécharger](https://img.shields.io/static/v1?label=%20&labelColor=5c5c5c&message=md%20·%20html%20·%20epub%20·%20rtf%20·%20odt%20·%20docx&color=3bcaec&style=flat-square&logo=docusign&logoColor=white)](https://github.com/GaelGirodon/laec/releases/latest)
 
 Outillage d'extraction du programme _L'Avenir en commun_ depuis la plateforme
 [_Nous Sommes Pour_](https://noussommespour.fr/programme/) et d'exportation
-en plusieurs formats (`md`, `epub`, `html`, `rtf`, etc.) favorisant ainsi
-sa lecture depuis divers périphériques (notamment les liseuses).
+en plusieurs formats (`md`, `html`, `epub`, `rtf`, `odt` et `docx`) facilitant
+ainsi sa lecture depuis divers périphériques (notamment les liseuses).
 
 ## Utilisation
 

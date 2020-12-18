@@ -79,13 +79,13 @@ lang: fr-FR
         .replace(/^---\ntitle: ([^\n]+)\ndate: ([^\n]+)\n.+\n---/, "# $1\n\n$2")
         .replace(/\\newpage\n\n/g, "");
     await fs.writeFile(`${distFile}.md`, distTxtContent, "utf8");
-    // epub
-    console.log(`Exportation (epub) -> ${distFile}.epub`);
-    await exec(`${pandocCmd} "${distMdFile}" -o "${distFile}.epub"`);
     // html
     console.log(`Exportation (html) -> ${distFile}.html`);
     const htmlTemplateFile = path.join(__dirname, "..", "templates", "template.html");
     await exec(`${pandocCmd} "${distMdFile}" --template="${htmlTemplateFile}" -o "${distFile}.html"`);
+    // epub
+    console.log(`Exportation (epub) -> ${distFile}.epub`);
+    await exec(`${pandocCmd} "${distMdFile}" -o "${distFile}.epub"`);
     // rtf
     console.log(`Exportation (rtf) -> ${distFile}.rtf`);
     await exec(`${pandocCmd} "${distMdFile}" -o "${distFile}.rtf"`);
