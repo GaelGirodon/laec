@@ -1,6 +1,6 @@
 {
   "name": "laec",
-  "version": "2020.11.2",
+  "version": "2020.11.3",
   "description": "Outillage d'extraction et d'exportation du programme L'Avenir en commun",
   "scripts": {
     "extract": "node scripts/extract.js",
@@ -17,9 +17,9 @@
   },
   "homepage": "https://github.com/GaelGirodon/laec#readme",
   "devDependencies": {
-    "axios": "^0.21.1",
+    "axios": "^0.23.0",
     "cheerio": "^1.0.0-rc.10",
-    "turndown": "^7.0.0"
+    "turndown": "^7.1.1"
   },
   "engines": {
     "node": ">=14.0.0"

@@ -1,5 +1,5 @@
 /*
- * Extrait le programme L'Avenir en commun depuis https://noussommespour.fr/programme/
+ * Extrait le programme L'Avenir en commun depuis https://melenchon2022.fr
  * et le convertit en plusieurs formats (md/txt, epub, html, rtf, odt et docx).
  */
 
@@ -15,7 +15,7 @@ const turndown = new (require("turndown"))({
 });
 
 // Source
-const tocUrl = "https://noussommespour.fr/programme/";
+const tocUrl = "https://melenchon2022.fr/programme-version-de-travail-de-2020/";
 
 (async () => {
     //
@@ -30,7 +30,7 @@ const tocUrl = "https://noussommespour.fr/programme/";
     await fs.mkdir(distDir, { recursive: true });
     await fs.writeFile(distMdFile, `---
 title: L’Avenir en commun
-date: Version actualisée - Novembre 2020
+date: Version de travail de novembre 2020
 lang: fr-FR
 ---\n\n`, "utf8");
 
@@ -38,12 +38,12 @@ lang: fr-FR
     console.log("> Sommaire");
     const tocHtml = (await axios.get(tocUrl)).data;
     const tocDom = cheerio.load(tocHtml);
-    const sections = tocDom("main h3 a").map((_, el) => {
-        return {
+    const sections = tocDom("main .elementor-heading-title a")
+        .filter((_, el) => tocDom(el).text().length > 10)
+        .map((_, el) => ({
             title: tocDom(el).text().trim(),
             url: tocDom(el).attr("href")
-        };
-    }).get();
+        })).get();
 
     const chapters = sections.filter(s => !s.url.includes("annexe"));
     const annexes = sections.filter(s => s.url.includes("annexe"));
@@ -113,7 +113,7 @@ async function extractPage(url, l, annex) {
     const html = (await axios.get(url)).data;
     // Extraction du titre et du contenu
     const dom = cheerio.load(html);
-    const title = dom("h2").eq(0).text();
+    const title = dom("h2").eq(1).text();
     let raw = dom("body.page > div.page > div > section").slice(2, 3)
         .find(".elementor-widget-container").eq(0)
         .remove("span.elementor-menu-anchor").html();
@@ -135,14 +135,17 @@ async function extractPage(url, l, annex) {
         .replace(/^#+\s*(?:\*\*)?([^\d\s*#][^*\n]+)(?:\*\*)?$/gm, "#".repeat(level + 1) + " $1") // Titres non numérotés
         .replace(/^#+\s*(Pour en savoir plus[^:\n]+): *$/gm, "#".repeat(level) + " $1") // Titres "Pour en savoir plus [...]"
     content = content
+        .replace(/\u00a0/g, " ") // Remplacement des espaces insécables
         .replace(/^(#+ .+) : *$/gm, "$1") // Suppression du ":" final pour les titres
         .replace(/ *\*\* *\*\*_([^_]+)_\*\* *\*\* */g, " _$1_ ") // Nettoyage des conflits <strong> et <em>
+        .replace(/([^ ])\*\* {1,}\*\*([^ ])/g, "$1 $2") // Nettoyage des <strong> consécutifs
         .replace(/[^\S\r\n]+$/gm, "") // Nettoyage des espaces en fin de ligne
         .replace(/([^\n])\n(Concrètement|Pour aller plus loin) :\n/g, "$1\n\n$2 :\n") // Saut de paragraphe manquant
         .replace(/^(\s*)-\s+/gm, "$1- ") // Formatage des listes à puces
         .replace(/^\s*•\s+/gm, "- ") // Formatage des listes à puces non standard
         .replace(/\[\]\([^)]+\)/g, "") // Suppression des liens sans texte associé
         .replace(/([^\s]):([^\/])/g, "$1 :$2") // Espace manquant avant ":"
+        .replace(/: +/g, ": ") // Suppression des espaces multiples après ":"
         .trim();
     return { title, content };
 }

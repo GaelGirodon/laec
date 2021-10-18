@@ -1,5 +1,10 @@
 # Historique des changements
 
+## 2020.11.3 - 18/10/2021
+
+- Mise à jour et amélioration de l'extraction
+- Mise à jour des dépendances
+
 ## 2020.11.2 - 27/06/2021
 
 - Mise à jour des dépendances
