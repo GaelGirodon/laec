@@ -1,5 +1,5 @@
 /*
- * Extrait le programme L'Avenir en commun depuis https://melenchon2022.fr
+ * Extrait le programme L'Avenir en commun depuis https://laec.fr
  * et le convertit en plusieurs formats (md/txt, epub, html, rtf, odt et docx).
  */
 
@@ -15,7 +15,8 @@ const turndown = new (require("turndown"))({
 });
 
 // Source
-const tocUrl = "https://melenchon2022.fr/programme-version-de-travail-de-2020/";
+const url = "https://laec.fr";
+const tocUrl = `${url}/sommaire`;
 
 (async () => {
     //
@@ -27,43 +28,64 @@ const tocUrl = "https://melenchon2022.fr/programme-version-de-travail-de-2020/";
     // Initialisation
     const distDir = path.join(__dirname, "..", "dist");
     const distMdFile = path.join(distDir, "laec.md");
+    const np = "\\newpage\n\n";
     await fs.mkdir(distDir, { recursive: true });
     await fs.writeFile(distMdFile, `---
 title: L’Avenir en commun
-date: Version de travail de novembre 2020
+date: Le programme pour l’Union Populaire présenté par Jean-Luc Mélenchon
 lang: fr-FR
----\n\n`, "utf8");
+---\n
+${np}_L’harmonie des êtres humains entre eux et avec la nature comme vision du monde_\n
+**« L’Avenir en commun »**\n\n`, "utf8");
 
     // Sommaire
     console.log("> Sommaire");
     const tocHtml = (await axios.get(tocUrl)).data;
     const tocDom = cheerio.load(tocHtml);
-    const sections = tocDom("main .elementor-heading-title a")
+    const sections = tocDom("#main nav a.toc-chapter, #main nav a.toc-section")
         .filter((_, el) => tocDom(el).text().length > 10)
         .map((_, el) => ({
-            title: tocDom(el).text().trim(),
+            title: tocDom(el).text().replace(/^\d+ +/, "").trim(),
+            type: tocDom(el).attr("id")?.split("-")[0] || "section",
+            number: tocDom(el).attr("href").split("/")[2],
+            partNumber: tocDom(el).attr("class").split(" ")
+                .find(c => c.match(/^toc-chapter-\d+$/)).split("-")[2],
             url: tocDom(el).attr("href")
         })).get();
 
-    const chapters = sections.filter(s => !s.url.includes("annexe"));
-    const annexes = sections.filter(s => s.url.includes("annexe"));
-    const np = "\\newpage\n\n";
-
-    // Chapitres
-    for (let i = 0; i < chapters.length; i++) {
-        console.log(`> Chapitre ${i} (${chapters[i].url})`);
-        const chapter = await extractPage(chapters[i].url, 3);
-        const chapterContent = `${np}## ${chapter.title}\n\n${chapter.content}\n\n`;
-        await fs.appendFile(distMdFile, chapterContent, "utf8");
-    }
-
-    // Annexes
-    await fs.appendFile(distMdFile, `${np}## Annexes\n\n`, "utf8");
-    for (let i = 0; i < annexes.length; i++) {
-        console.log(`> Annexe ${i + 1} (${annexes[i].url})`);
-        const annex = await extractPage(annexes[i].url, 4, true);
-        const annexContent = `${i == 0 ? "" : np}### ${annex.title}\n\n${annex.content}\n\n`;
-        await fs.appendFile(distMdFile, annexContent, "utf8");
+    // Parties > Chapitres > Sections
+    for (let i = 0; i < sections.length; i++) {
+        const section = sections[i];
+        console.log(`> ${section.type} ${section.number} (${section.url})`);
+        const page = await extractPage(section.url);
+        let content = "";
+        // Titre
+        if (section.type == "partie") {
+            content += `${"#".repeat(2)}`;
+        } else if (section.type == "chapitre") {
+            content += `${"#".repeat(3)} Chapitre ${section.number} :`;
+        } else {
+            content += `${"#".repeat(4)} ${section.number}.`;
+        }
+        content += ` ${page.title}\n`;
+        // Contenu
+        if (page.content) {
+            content += "\n" + page.content + "\n";
+        }
+        // Mesures
+        if (page.keyMeasures?.length || page.measures?.length) {
+            content += "\n" + "#".repeat(5) + " Mesure clé\n\n"
+                + page.keyMeasures.map(m => `**${m}**\n\n`).join("")
+                + page.measures.map(m => `- ${m}\n`).join("");
+        }
+        // À savoir
+        if (page.toKnow?.length) {
+            content += "\n" + "#".repeat(5) + " À savoir\n\n"
+                + page.toKnow.map(k => `- ${k}\n`).join("");
+        }
+        // Saut de page
+        content += "\n" + (page.content && i < sections.length - 1 ? np : "");
+        await fs.appendFile(distMdFile, content, "utf8");
     }
 
     //
@@ -71,7 +93,7 @@ lang: fr-FR
     //
 
     const distFile = path.join(distDir, "L-Avenir-en-commun");
-    const pandocCmd = "pandoc --lua-filter=filters/pagebreak.lua -s --toc";
+    const pandocCmd = "pandoc --lua-filter=filters/pagebreak.lua -s --toc --toc-depth=4";
 
     // md
     console.log(`Exportation (md) -> ${distFile}.md`);
@@ -102,50 +124,32 @@ lang: fr-FR
  * Extrait une page du programme (préface, chapitre ou annexe) depuis l'URL
  * donnée puis la nettoie et la convertit en Markdown.
  *
- * @param {string} url URL de la page à extraire
- * @param {number} l Niveau des titres (par défaut : 3)
- * @param {boolean} annex La page à extraire est une annexe
+ * @param {string} path Chemin de la page à extraire
  * @returns Le titre et le contenu de la page (au format Markdown)
  */
-async function extractPage(url, l, annex) {
-    const level = l || 3;
+async function extractPage(path) {
     // Téléchargement de la page
-    const html = (await axios.get(url)).data;
-    // Extraction du titre et du contenu
+    const html = (await axios.get(`${url}${path}`)).data;
     const dom = cheerio.load(html);
-    const title = dom("h2").eq(1).text();
-    let raw = dom("body.page > div.page > div > section").slice(2, 3)
-        .find(".elementor-widget-container").eq(0)
-        .remove("span.elementor-menu-anchor").html();
-    // Nettoyage du contenu
-    if (!annex) raw = raw
-        .replace(/h2>/g, "strong>"); // Certains titres n'en sont pas
-    raw = raw
-        .replace(/h[23]>/g, `h${level}>`) // Mise des titres au bon niveau
-        .replace(/ ([a-z])<(strong|em)>([a-z])/gi, " <$2>$1$3") // <strong> et <em> mal positionnés
-        .replace(/([a-z])<\/(strong|em)>([a-z]) /gi, "$1$3</$2> ") // </strong> et </em> mal positionnés
-        .replace(/\s+<\/(strong|em)>\s*/g, "</$1> ") // </strong> et </em> mal positionnés (espace avant fin)
-        .replace(/<strong>\s*<br>\s*<\/strong>/g, "</p><p>") // Correction de certains sauts à la ligne
-        .trim();
-    // Conversion en Markdown et suite du nettoyage
-    let content = turndown.turndown(raw)
-        .replace(/^[^\S\r\n]+_/gm, "_") // Suppression de l'espace devant les introductions
-        .replace(/^(#+)\s*([\d]+)\\?\.\s+/gm, "$1 $2. "); // Formatage des titres numérotés
-    if (!annex) content = content
-        .replace(/^#+\s*(?:\*\*)?([^\d\s*#][^*\n]+)(?:\*\*)?$/gm, "#".repeat(level + 1) + " $1") // Titres non numérotés
-        .replace(/^#+\s*(Pour en savoir plus[^:\n]+): *$/gm, "#".repeat(level) + " $1") // Titres "Pour en savoir plus [...]"
-    content = content
-        .replace(/\u00a0/g, " ") // Remplacement des espaces insécables
-        .replace(/^(#+ .+) : *$/gm, "$1") // Suppression du ":" final pour les titres
-        .replace(/ *\*\* *\*\*_([^_]+)_\*\* *\*\* */g, " _$1_ ") // Nettoyage des conflits <strong> et <em>
-        .replace(/([^ ])\*\* {1,}\*\*([^ ])/g, "$1 $2") // Nettoyage des <strong> consécutifs
-        .replace(/[^\S\r\n]+$/gm, "") // Nettoyage des espaces en fin de ligne
-        .replace(/([^\n])\n(Concrètement|Pour aller plus loin) :\n/g, "$1\n\n$2 :\n") // Saut de paragraphe manquant
-        .replace(/^(\s*)-\s+/gm, "$1- ") // Formatage des listes à puces
-        .replace(/^\s*•\s+/gm, "- ") // Formatage des listes à puces non standard
-        .replace(/\[\]\([^)]+\)/g, "") // Suppression des liens sans texte associé
-        .replace(/([^\s]):([^\/])/g, "$1 :$2") // Espace manquant avant ":"
-        .replace(/: +/g, ": ") // Suppression des espaces multiples après ":"
-        .trim();
-    return { title, content };
+    // Extraction du titre
+    const title = dom("h1 b").eq(0).text();
+    // Extraction du contenu et nettoyage
+    let content = turndown.turndown(dom("article#contenu div.semi-lead p").html()).trim()
+        .replace(/(●|\\-) /g, "- ")    // Uniformisation des puces
+        .replace(/: *\n-/g, ":\n\n-")  // Ajout d'une ligne blanche au-dessus des listes
+        .replace(/ +\n/g, "\n")        // Suppression des espaces en fin de ligne
+        // Mise en forme des citations
+        .replace(/(«[^»\n]+»)\n([^,\n]+,[^,\n]+,[^,\n]+)\n/g, "> $1\n>\n> – _$2_\n");
+    // Extraction des mesures clé
+    let keyMeasures = dom("header.page-header nav.list-measures h5")
+        .map((_, m) => turndown.turndown(dom(m).text()).trim()).toArray();
+    // Extraction des autres mesures
+    let measures = dom("section.section-measures nav.list-measures li")
+        .map((_, m) => turndown.turndown(dom(m).text()).trim()).toArray();
+    // Extraction des points à savoir
+    let toKnow = dom(".addenda-list p strong")
+        .map((_, k) => dom(k).html()).toArray()
+        .flatMap(k => k.split("<br>")).map(l => l.trim()).filter(k => k)
+        .map(k => turndown.turndown(k));
+    return { title, content, keyMeasures, measures, toKnow };
 }

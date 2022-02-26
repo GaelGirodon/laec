@@ -1,5 +1,10 @@
 # Historique des changements
 
+## 2021.11.0 - 25/03/2022
+
+- Mise à jour vers la dernière version du programme
+- Mise à jour des dépendances
+
 ## 2020.11.3 - 18/10/2021
 
 - Mise à jour et amélioration de l'extraction
