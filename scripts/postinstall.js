@@ -1,6 +1,6 @@
 /*
  * postinstall.js
- * Tâches additionnelles après l'installation des dépendances.
+ * Tâches additionnelles après l'installation des dépendances
  */
 
 const axios = require("axios");

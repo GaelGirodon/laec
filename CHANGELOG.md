@@ -1,5 +1,10 @@
 # Historique des changements
 
+## 2022.05.0-nupes - 21/05/2022
+
+- Extraction du programme de la NUPES
+- Mise à jour des dépendances
+
 ## 2021.11.0 - 25/03/2022
 
 - Mise à jour vers la dernière version du programme
