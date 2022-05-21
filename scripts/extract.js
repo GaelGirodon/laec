@@ -138,6 +138,10 @@ async function extractPage(path) {
         .replace(/(●|\\-) /g, "- ")    // Uniformisation des puces
         .replace(/: *\n-/g, ":\n\n-")  // Ajout d'une ligne blanche au-dessus des listes
         .replace(/ +\n/g, "\n")        // Suppression des espaces en fin de ligne
+        .replace(/'/g, "’")            // Uniformisation des apostrophes
+        .replace(/“ */g, "« ")         // Uniformisation des guillemets
+        .replace(/ *”/g, " »")
+        .replace(/a\u0300/g, "à")      // Uniformisation des caractères accentués
         // Mise en forme des citations
         .replace(/(«[^»\n]+»)\n([^,\n]+,[^,\n]+,[^,\n]+)\n/g, "> $1\n>\n> – _$2_\n");
     // Extraction des mesures clé
